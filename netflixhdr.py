@@ -47,7 +47,6 @@ def main():
                     column_keys.append(rating['Source'])
                 movie[rating['Source']] = rating['Value']
             movie['Average Rating'] = get_average(details['Ratings'])
-
     m2d = [[movie[c_key] if c_key in movie else 'NA' for c_key in column_keys] for movie in movies]
     moviesDF = pandas.DataFrame(columns=column_keys, data=m2d)
     moviesDF.to_csv('netflixhdr.csv', index=False)
@@ -83,7 +82,8 @@ def get_average(rating):
             total = total + round(a[0] / a[1], 2)
         if '%' in rat:
             total = total + round(float(rat.replace('%', '')) / 100, 2)
-    return round(total / num_ratings, 2)
+    avg = round(total / num_ratings, 2)
+    return avg
 
 
 @filecache(24 * 60 * 60)

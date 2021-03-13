@@ -2,6 +2,10 @@
 
 NetflixHDR is a python script to help find netflix HD movies that don't suck.
 
+## The Problem
+
+hd-report.com has a list of all the HD movies [available on Netflix](https://hd-report.com/list-of-4k-ultra-hd-movies-tv-shows-on-netflix/), however they don't include the ratings for the movies. I use this as a starting point, then connect to the Open Movie Database, and pull ratings for these movies. Once merged together, we can find a movie or a show that not only looks good, but is actually entertaining to watch.
+
 ## Requirements
 
 An [OMDB](http://www.omdbapi.com/) API key.

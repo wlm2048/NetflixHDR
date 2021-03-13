@@ -10,13 +10,22 @@ OMDBAPI_KEY=<your omdb api key>
 Code by: wlm2048@gmail.com
 """
 import os
-import time
 
+import pandas
 import requests
 from tqdm import tqdm
 from filecache import filecache
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+
+session = requests.Session()
+retry = Retry(connect=3, backoff_factor=0.5)
+adapter = HTTPAdapter(max_retries=retry)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 
 def main():
@@ -25,16 +34,23 @@ def main():
     """
     load_dotenv()
     apikey = os.getenv('OMDBAPI_KEY')
-    k, movies = hashify()
+    column_keys, movies = hashify()
     # k = ['Title', '4k', 'HDR', 'Audio', 'Type', 'New']
-    for movie in tqdm(movies):
+    column_keys.append('Average Rating')
+    pbar = tqdm(movies)
+    for movie in pbar:
+        pbar.set_description(movie['Title'])
         details = fetch_details(apikey, movie['Title'])
-        if 'Ratings' in details:
+        if 'Ratings' in details and len(details['Ratings']) > 0:
             for rating in details['Ratings']:
-                if not rating['Source'] in k:
-                    k.append(rating['Source'])
+                if not rating['Source'] in column_keys:
+                    column_keys.append(rating['Source'])
                 movie[rating['Source']] = rating['Value']
             movie['Average Rating'] = get_average(details['Ratings'])
+
+    m2d = [[movie[c_key] if c_key in movie else 'NA' for c_key in column_keys] for movie in movies]
+    moviesDF = pandas.DataFrame(columns=column_keys, data=m2d)
+    moviesDF.to_csv('netflixhdr.csv', index=False)
 
 
 def hashify():
@@ -78,10 +94,9 @@ def fetch_movies():
 
 @filecache(25 * 60 * 60)
 def fetch_details(apikey, title):
-    time.sleep(0.5)
     try:
-        r = requests.get(f"http://www.omdbapi.com/?t={title}&apikey={apikey}")
-    except ConnectionResetError:
+        r = session.get(f"http://www.omdbapi.com/?t={title}&apikey={apikey}")
+    except requests.exceptions.ConnectionError:
         print(f"Connection reset on {title}")
         return
     return r.json()
